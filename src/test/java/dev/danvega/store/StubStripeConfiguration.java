@@ -3,6 +3,7 @@ package dev.danvega.store;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import dev.danvega.store.catalog.Sticker;
+import dev.danvega.store.checkout.CheckoutFailedException;
 import dev.danvega.store.checkout.StripeGateway;
 
 import org.springframework.boot.test.context.TestConfiguration;
@@ -35,11 +36,29 @@ public class StubStripeConfiguration {
 
         private volatile String lastSessionId;
 
+        private volatile String lastOrderReference;
+
+        private volatile boolean failNext;
+
+        /** Make the next call blow up, so a proof can fail the remote side on demand. */
+        public void failNext() {
+            this.failNext = true;
+        }
+
         @Override
-        public CheckoutSession start(Sticker sticker, String successUrl, String cancelUrl) {
+        public CheckoutSession start(Sticker sticker, String orderReference, String successUrl, String cancelUrl) {
+            if (failNext) {
+                failNext = false;
+                throw new CheckoutFailedException("stubbed Stripe failure", new IllegalStateException("stub"));
+            }
             var id = "cs_test_%s_%d".formatted(sticker.slug(), counter.incrementAndGet());
             this.lastSessionId = id;
+            this.lastOrderReference = orderReference;
             return new CheckoutSession(id, "https://checkout.stripe.test/pay/" + id);
+        }
+
+        public String lastOrderReference() {
+            return lastOrderReference;
         }
 
         /** The session id from the most recent purchase, for asserting against. */

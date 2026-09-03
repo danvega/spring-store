@@ -5,6 +5,33 @@ cd "$(dirname "$0")"
 
 MVN="./mvnw -q -Dstyle.color=never"
 
+# Goal 5's first half is a claim about tracked files, so it is checked here rather than
+# in a Java test that could only ever inspect the running process.
+check_secrets() {
+  local failed=0
+
+  if git ls-files --error-unmatch secrets.properties >/dev/null 2>&1; then
+    echo "FAIL: secrets.properties is tracked by git" >&2
+    failed=1
+  fi
+
+  if ! git check-ignore -q secrets.properties; then
+    echo "FAIL: secrets.properties is not git ignored" >&2
+    failed=1
+  fi
+
+  local hits
+  hits=$(git ls-files -z | xargs -0 grep -lE '(sk|rk)_(test|live)_[A-Za-z0-9]{16,}|whsec_[A-Za-z0-9]{16,}|pk_live_[A-Za-z0-9]{16,}' 2>/dev/null || true)
+  if [ -n "$hits" ]; then
+    echo "FAIL: key material found in tracked files:" >&2
+    echo "$hits" | sed 's/^/  /' >&2
+    failed=1
+  fi
+
+  [ "$failed" -eq 0 ] && echo "secrets: ok"
+  return $failed
+}
+
 usage() {
   cat <<'USAGE'
 usage: ./verify [target]
@@ -18,6 +45,9 @@ usage: ./verify [target]
   confirming     the page tells the truth before the webhook has landed
   signature      only genuinely signed events are processed
   replay         a redelivered event does not get processed twice
+  recovery       an order with no session id is still found by its reference
+  startup        the app refuses to start without Stripe keys, and says why
+  secrets        no key material is tracked by git
 
 Targets that cannot run unattended are listed in PRODUCT.md under Stops.
 USAGE
@@ -33,6 +63,9 @@ case "${1:-all}" in
   confirming)   $MVN test -Dtest=ConfirmingTest ;;
   signature)    $MVN test -Dtest=SignatureTest ;;
   replay)       $MVN test -Dtest=ReplayTest ;;
+  recovery)     $MVN test -Dtest=RecoveryTest ;;
+  startup)      $MVN test -Dtest=StartupTest ;;
+  secrets)      check_secrets ;;
   -h|--help|help) usage ;;
   *) echo "unknown target: $1" >&2; usage >&2; exit 2 ;;
 esac

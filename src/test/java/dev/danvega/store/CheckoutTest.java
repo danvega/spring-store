@@ -48,6 +48,22 @@ class CheckoutTest extends IntegrationTest {
     }
 
     @Test
+    void a_stripe_failure_leaves_a_pending_order_rather_than_nothing() {
+        var nullSessionOrdersBefore = orders.findAll().stream()
+                .filter(order -> order.stripeSessionId() == null).count();
+
+        stripe.failNext();
+        client.post().uri("/buy/ship-it").exchange().expectStatus().is5xxServerError();
+
+        var nullSessionOrdersAfter = orders.findAll().stream()
+                .filter(order -> order.stripeSessionId() == null).count();
+
+        assertThat(nullSessionOrdersAfter)
+                .as("the order is written before Stripe is called, so the failure leaves a record")
+                .isEqualTo(nullSessionOrdersBefore + 1);
+    }
+
+    @Test
     void an_unknown_sticker_is_a_404() {
         client.post().uri("/buy/not-a-real-sticker").exchange().expectStatus().isNotFound();
     }

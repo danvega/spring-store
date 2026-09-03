@@ -73,10 +73,19 @@ whether it can be trusted, and whether a replay creates a second order.
   are independent, each with its own timestamp. The design shows them as paired badges,
   green for Stripe and yellow for the app. Conflating them is what made the original
   goal 1 weak enough to pass by accident.
-- **The order row exists before the webhook arrives**: created as pending when the
-  Checkout Session is created, flipped to paid by the webhook. Gives the confirming page
-  something to poll, and makes goal 4 natural, since the webhook updates a row that is
-  already there rather than racing to create one.
+- **The order row is written before the Stripe session is created**, and flipped to paid
+  by the webhook. Gives the confirming page something to poll and makes goal 4 natural,
+  since the webhook updates a row that is already there. The ordering also decides which
+  orphan a failure leaves: Stripe first would leave a payable session this app never heard
+  of, while order first leaves a pending order that can never be paid. `CheckoutService`
+  is deliberately not transactional, because holding a database connection across a
+  network call to Stripe buys nothing.
+- **The order reference travels to Stripe as `client_reference_id`**, and comes back on
+  the webhook. It is the fallback match for an order whose session id was never attached,
+  which is what checkout leaves behind if it dies between creating the session and writing
+  it back. Matching that way attaches the session id, so everything afterwards finds the
+  order directly. Two systems cannot share a transaction, so this does not remove the gap,
+  it makes the gap recoverable instead of silent.
 - **The success URL carries the Stripe checkout session id**: the confirming page needs
   an identity to poll and the order reference does not exist yet at that point.
 - **Confirming thresholds are 15s and 60s**: a plain wait below 15s, an acknowledged
@@ -117,6 +126,11 @@ whether it can be trusted, and whether a replay creates a second order.
   A rejected event leaves no claim behind, and neither does an event that matched no
   order. Claiming something the app could not act on would burn the only retry that could
   ever record that payment, which is the exact failure this project exists to catch.
+- **Missing keys fail validation, not placeholder resolution**: the Stripe properties
+  carry an empty default so binding actually runs, and `@Validated` with `@NotBlank`
+  produces a message naming the property and where to get its value. Without the default
+  the app still refused to start, but only said a placeholder could not be resolved. Both
+  are loud. One of them is useful.
 - **The cancel URL carries the sticker id**, so "Try again" returns to the same purchase
   rather than the catalog.
 
@@ -137,16 +151,17 @@ end-of-run batch.
 
 ## Current state
 
-**Works today:** goals 1 through 4. The storefront lists six seeded stickers, buying one
-creates a pending order and redirects to Stripe Checkout, and a signed
-`checkout.session.completed` webhook records the payment. Landing back before the webhook
-shows a confirming state that never claims the store has recorded anything, moving through
-waiting, taking longer at 15s, and not recorded at 60s. Forged, unsigned and tampered
-webhooks are rejected and leave nothing behind. A redelivered event is claimed once and
-never processed twice. Twenty four tests behind `./verify`, all green.
+**Works today:** all five goals, the MVP complete. Buying a sticker writes the order,
+redirects to Stripe Checkout, and a signed webhook records the payment. Landing back
+before the webhook shows a confirming state that never claims the store has recorded
+anything. Forged, unsigned and tampered webhooks are rejected and leave nothing behind. A
+redelivered event is claimed once and never processed twice. A clone with no Stripe keys
+refuses to start and says where to get them, and no key material is tracked by git.
+33 tests behind `./verify`, all green.
 **In progress:** nothing. Goal 1's browser round trip was proven against live Stripe
 test mode on 3 September 2026, evidence in `.ship/verify/evidence/001-goal-1-live-stripe.md`.
 The measured gap between Stripe's event time and the app recording it was about 1 second.
-**Next:** goal 5, a clone with no Stripe keys fails loudly at startup with a clear
-message. The app already fails on the missing placeholder, so this is mostly a proof and
-probably a better message.
+**Next:** the MVP is done, so this is Dan's call rather than the file's. The candidates
+are recorded in `.ship/open.md`: reconciliation against Stripe, which is the one real gap
+left and needs a scheduler, and pending orders accumulating with nothing to clean them up.
+Neither is required for what this project set out to prove.

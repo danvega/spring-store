@@ -16,11 +16,12 @@ class StripeCheckoutGateway implements StripeGateway {
     }
 
     @Override
-    public CheckoutSession start(Sticker sticker, String successUrl, String cancelUrl) {
+    public CheckoutSession start(Sticker sticker, String orderReference, String successUrl, String cancelUrl) {
         var params = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
                 .setSuccessUrl(successUrl)
                 .setCancelUrl(cancelUrl)
+                .setClientReferenceId(orderReference)
                 .addLineItem(SessionCreateParams.LineItem.builder()
                         .setQuantity(1L)
                         .setPriceData(SessionCreateParams.LineItem.PriceData.builder()

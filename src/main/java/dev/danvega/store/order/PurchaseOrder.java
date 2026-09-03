@@ -23,8 +23,18 @@ public record PurchaseOrder(
         Instant paidAtStripe,
         Instant recordedAt) {
 
-    public static PurchaseOrder pending(String reference, Long stickerId, int amountCents, String stripeSessionId) {
-        return new PurchaseOrder(null, reference, stickerId, amountCents, stripeSessionId, Instant.now(), null, null);
+    /**
+     * Written before the Stripe session exists, so there is no session id yet. That
+     * ordering is deliberate: a failure now leaves a harmless pending order rather than a
+     * payable Stripe session this app has never heard of.
+     */
+    public static PurchaseOrder pending(String reference, Long stickerId, int amountCents) {
+        return new PurchaseOrder(null, reference, stickerId, amountCents, null, Instant.now(), null, null);
+    }
+
+    public PurchaseOrder attachSession(String stripeSessionId) {
+        return new PurchaseOrder(id, reference, stickerId, amountCents, stripeSessionId,
+                createdAt, paidAtStripe, recordedAt);
     }
 
     public boolean isRecorded() {

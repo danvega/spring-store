@@ -59,7 +59,8 @@ class StripeWebhookController {
         }
 
         var sessionId = session.get().getId();
-        var outcome = recorder.record(event.getId(), event.getType(), sessionId, paidAt(event));
+        var outcome = recorder.record(event.getId(), event.getType(), sessionId,
+                session.get().getClientReferenceId(), paidAt(event));
 
         return switch (outcome) {
             case RecordOutcome.Recorded(var order) -> ResponseEntity.ok("recorded " + order.reference());

@@ -29,11 +29,18 @@ public class OrderRecorder {
      * there is no catch here, and why the constraint is not decoration.
      */
     @Transactional
-    public RecordOutcome record(String stripeEventId, String type, String stripeSessionId, Instant paidAtStripe) {
+    public RecordOutcome record(String stripeEventId, String type, String stripeSessionId,
+            String clientReferenceId, Instant paidAtStripe) {
         if (events.existsByStripeEventId(stripeEventId)) {
             return new RecordOutcome.AlreadySeen(stripeEventId);
         }
-        var order = orders.findByStripeSessionId(stripeSessionId).orElse(null);
+        // The session id is the normal match. The reference is the fallback for an order
+        // whose session id was never attached, which happens if checkout died between
+        // creating the Stripe session and writing it back.
+        var order = orders.findByStripeSessionId(stripeSessionId)
+                .or(() -> clientReferenceId == null ? java.util.Optional.<dev.danvega.store.order.PurchaseOrder>empty()
+                        : orders.findByReference(clientReferenceId))
+                .orElse(null);
         if (order == null) {
             // Deliberately not claimed. An event we could not act on has not been handled,
             // and claiming it would burn the only retry that could ever record this
@@ -43,6 +50,10 @@ public class OrderRecorder {
         }
 
         events.save(StripeEvent.received(stripeEventId, type));
-        return new RecordOutcome.Recorded(orders.save(order.recordPayment(paidAtStripe, Instant.now())));
+
+        // Matched by reference means the session id never landed. Attach it now so the
+        // confirming page and any redelivery find this order the direct way.
+        var matched = order.stripeSessionId() == null ? order.attachSession(stripeSessionId) : order;
+        return new RecordOutcome.Recorded(orders.save(matched.recordPayment(paidAtStripe, Instant.now())));
     }
 }

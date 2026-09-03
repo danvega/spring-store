@@ -8,7 +8,11 @@ import dev.danvega.store.catalog.Sticker;
  */
 public interface StripeGateway {
 
-    CheckoutSession start(Sticker sticker, String successUrl, String cancelUrl);
+    /**
+     * The order reference goes to Stripe as client_reference_id and comes back on the
+     * webhook, which is how an order whose session id was never attached is still found.
+     */
+    CheckoutSession start(Sticker sticker, String orderReference, String successUrl, String cancelUrl);
 
     record CheckoutSession(String id, String url) {
     }

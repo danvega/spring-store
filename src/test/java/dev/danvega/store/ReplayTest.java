@@ -106,7 +106,7 @@ class ReplayTest extends IntegrationTest {
 
         // The order is put right, and Stripe redelivers.
         var sticker = stickers.findBySlug("ship-it").orElseThrow();
-        orders.save(PurchaseOrder.pending("SPR-FIXT-0001", sticker.id(), 99, sessionId));
+        orders.save(PurchaseOrder.pending("SPR-FIXT-0001", sticker.id(), 99).attachSession(sessionId));
         deliver(payload);
 
         assertThat(orders.findByStripeSessionId(sessionId).orElseThrow().isRecorded()).isTrue();

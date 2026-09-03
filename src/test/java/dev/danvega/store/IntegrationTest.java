@@ -49,6 +49,13 @@ public abstract class IntegrationTest {
         this.client = RestTestClient.bindToApplicationContext(this.context).build();
     }
 
+    /** A checkout.session.completed event carrying the order reference Stripe echoes back. */
+    public static String completedEvent(String sessionId, String clientReferenceId, Instant created) {
+        return completedEvent(sessionId, created)
+                .replace("\"payment_status\": \"paid\"",
+                        "\"client_reference_id\": \"%s\",\n      \"payment_status\": \"paid\"".formatted(clientReferenceId));
+    }
+
     /** A checkout.session.completed event, shaped the way Stripe sends it. */
     public static String completedEvent(String sessionId, Instant created) {
         return """
