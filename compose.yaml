@@ -1,0 +1,11 @@
+services:
+  postgres:
+    image: 'postgres:18'
+    environment:
+      - 'POSTGRES_DB=springstore'
+      - 'POSTGRES_USER=springstore'
+      - 'POSTGRES_PASSWORD=springstore'
+    ports:
+      # 5433 on the host, not 5432: another project already owns 5432. Pinned rather than
+      # ephemeral so a database client can keep one saved connection.
+      - '5433:5432'

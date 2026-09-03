@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# The one entry point. Every acceptance criterion in .ship/specs/ names a target here.
+set -euo pipefail
+cd "$(dirname "$0")"
+
+MVN="./mvnw -q -Dstyle.color=never"
+
+usage() {
+  cat <<'USAGE'
+usage: ./verify [target]
+
+  all            every machine-checkable target (default)
+  build          compiles, including JTE templates
+  storefront     the catalog page lists the seeded stickers
+  checkout       buying creates a pending order and redirects to Stripe
+  webhook        a signed event flips the order to paid
+  confirmation   the confirmation page reads the order by Stripe session id
+  confirming     the page tells the truth before the webhook has landed
+  signature      only genuinely signed events are processed
+  replay         a redelivered event does not get processed twice
+
+Targets that cannot run unattended are listed in PRODUCT.md under Stops.
+USAGE
+}
+
+case "${1:-all}" in
+  all)          $MVN test ;;
+  build)        $MVN -DskipTests package ;;
+  storefront)   $MVN test -Dtest=StorefrontTest ;;
+  checkout)     $MVN test -Dtest=CheckoutTest ;;
+  webhook)      $MVN test -Dtest=WebhookTest ;;
+  confirmation) $MVN test -Dtest=ConfirmationTest ;;
+  confirming)   $MVN test -Dtest=ConfirmingTest ;;
+  signature)    $MVN test -Dtest=SignatureTest ;;
+  replay)       $MVN test -Dtest=ReplayTest ;;
+  -h|--help|help) usage ;;
+  *) echo "unknown target: $1" >&2; usage >&2; exit 2 ;;
+esac
