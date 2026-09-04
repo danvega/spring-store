@@ -7,7 +7,8 @@ for Dan, not a product.
 
 Checkout is not in doubt. Every tutorial shows the redirect. This exists to test what
 happens after the customer pays: whether the confirmation actually reaches the app,
-whether it can be trusted, and whether a replay creates a second order.
+whether it can be trusted, whether a replay creates a second order, and whether the amount
+charged is the amount the store meant to charge.
 
 ## Goals
 
@@ -23,6 +24,15 @@ whether it can be trusted, and whether a replay creates a second order.
    Done when: replaying the same webhook twice leaves exactly one paid order.
 5. **Secrets never live in the repo.**
    Done when: a fresh clone with no keys fails loudly at startup with a clear message.
+6. **A visitor buys several stickers in one go.**
+   Done when: a cart holding three different stickers, one of them with a quantity above
+   one, produces a single Stripe session and one order whose lines match the cart.
+7. **The amount is computed by the server, never taken from the browser.**
+   Done when: a request that tampers with a quantity or a price is ignored, and the Stripe
+   session total matches the server's own arithmetic.
+8. **A recorded payment is checked against what Stripe actually charged.**
+   Done when: an event whose `amount_total` disagrees with the order total is refused
+   rather than recorded.
 
 ## Non-goals
 
@@ -32,10 +42,13 @@ whether it can be trusted, and whether a replay creates a second order.
   payments.
 - **Shipping, tax, inventory** (not ever): real commerce concerns that would triple the
   surface and teach nothing about the integration.
-- **Storefront features** (not ever): no cart, no search, no filters, no categories, no
-  quantities. Six stickers on one page, one click each. Replaces an earlier "no polished
-  storefront" non-goal, which was wrong: the design pass showed polish is cheap and
-  features are what bloat.
+- **Storefront browsing** (not ever): no search, no filters, no categories, no product
+  pages. Six stickers on one page. Replaces an earlier "no polished storefront" non-goal,
+  which was wrong: the design pass showed polish is cheap and features are what bloat.
+  A cart and quantities were also on this list and were promoted on 3 September 2026,
+  because pricing a multi-item order is where the real payment lesson lives. With one
+  fixed 99-cent item the store never has to ask whether Stripe charged what it expected.
+  With a cart it does, and that is goals 7 and 8.
 - **Deployment** (not yet): runs locally with the Stripe CLI forwarding webhooks.
   Revisit only if this becomes a talk or a video.
 
@@ -161,7 +174,8 @@ refuses to start and says where to get them, and no key material is tracked by g
 **In progress:** nothing. Goal 1's browser round trip was proven against live Stripe
 test mode on 3 September 2026, evidence in `.ship/verify/evidence/001-goal-1-live-stripe.md`.
 The measured gap between Stripe's event time and the app recording it was about 1 second.
-**Next:** the MVP is done, so this is Dan's call rather than the file's. The candidates
-are recorded in `.ship/open.md`: reconciliation against Stripe, which is the one real gap
-left and needs a scheduler, and pending orders accumulating with nothing to clean them up.
-Neither is required for what this project set out to prove.
+**Next:** goals 6 through 8, the cart. Design round 3 first, since no cart screen exists
+and the storefront's button changes from Buy to Add. Then a decision on where an anonymous
+visitor's cart lives, which is unrecorded and may be a Stop if it needs a new dependency.
+Then the order gains lines, which is rework across the confirmation, confirming and
+cancelled screens.
