@@ -1,0 +1,53 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+:root{--cream:#FDF6E3;--ink:#171310}
+body{background:var(--cream);color:var(--ink);font-family:'Baloo 2',ui-rounded,system-ui,sans-serif}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.card{border:4px solid var(--ink);border-radius:1.75rem;background:var(--cream);box-shadow:8px 8px 0 0 var(--ink)}
+.tile{border:4px solid var(--ink);border-radius:1.5rem;box-shadow:6px 6px 0 0 var(--ink)}
+.pill{border:3px solid var(--ink);border-radius:999px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-size:.8rem}
+.btn-solid{background:var(--ink);color:var(--cream);border-radius:999px;font-weight:800}
+.btn-hollow{border:3px solid var(--ink);border-radius:999px;font-weight:800}
+.qty{border:3px solid var(--ink);border-radius:999px;font-weight:800;width:2.25rem;height:2.25rem;display:inline-flex;align-items:center;justify-content:center}
+</style>
+<title>Storefront with cart</title>
+<body class="p-6 md:p-10"><main class="mx-auto max-w-4xl">
+<div class="card p-8 md:p-12">
+  <div class="flex items-start justify-between gap-6">
+    <div>
+      <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight">Spring Store</h1>
+      <p class="mt-3 text-lg font-medium opacity-80 max-w-xl">
+        Six vinyl stickers, 99&cent; each. Add what you want, then check out once. Nothing ships.</p>
+    </div>
+    <div class="flex flex-col items-end gap-3 shrink-0">
+      <span class="pill px-4 py-2" style="background:#FFD84D">Stripe test mode</span>
+      <a href="1-cart.html" class="btn-solid px-5 py-3 text-base">Cart &middot; <span class="mono">4</span></a>
+    </div>
+  </div>
+
+  <div class="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+    <div><div class="tile aspect-square flex items-center justify-center p-5 text-center" style="background:#7ED957">
+      <span class="text-2xl font-extrabold leading-tight">Spring Boot Leaf</span></div>
+      <button class="btn-hollow w-full mt-4 py-4 text-lg">In cart &middot; <span class="mono">1</span></button></div>
+    <div><div class="tile aspect-square flex items-center justify-center p-5 text-center" style="background:#FFB02E">
+      <span class="text-2xl font-extrabold leading-tight">It Works On My Machine</span></div>
+      <button class="btn-solid w-full mt-4 py-4 text-lg">Add &middot; <span class="mono">$0.99</span></button></div>
+    <div><div class="tile aspect-square flex items-center justify-center p-5 text-center" style="background:#A78BFA">
+      <span class="text-2xl font-extrabold leading-tight">NullPointerException Survivor</span></div>
+      <button class="btn-solid w-full mt-4 py-4 text-lg">Add &middot; <span class="mono">$0.99</span></button></div>
+    <div><div class="tile aspect-square flex items-center justify-center p-5 text-center" style="background:#171310">
+      <span class="mono text-2xl font-bold" style="color:#7ED957">@Autowired</span></div>
+      <button class="btn-hollow w-full mt-4 py-4 text-lg">In cart &middot; <span class="mono">1</span></button></div>
+    <div><div class="tile aspect-square flex items-center justify-center p-5 text-center" style="background:#FF7A6B">
+      <span class="text-2xl font-extrabold leading-tight">Stack Overflow Driven Development</span></div>
+      <button class="btn-hollow w-full mt-4 py-4 text-lg">In cart &middot; <span class="mono">2</span></button></div>
+    <div><div class="tile aspect-square flex items-center justify-center p-5 text-center" style="background:#4FC3F7">
+      <span class="text-2xl font-extrabold leading-tight">Ship It</span></div>
+      <button class="btn-solid w-full mt-4 py-4 text-lg">Add &middot; <span class="mono">$0.99</span></button></div>
+  </div>
+
+  <p class="mono mt-10 text-sm opacity-60">
+    Payments run through Stripe Checkout in test mode &middot; card 4242 4242 4242 4242</p>
+</div></main>

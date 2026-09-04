@@ -144,6 +144,18 @@ charged is the amount the store meant to charge.
   produces a message naming the property and where to get its value. Without the default
   the app still refused to start, but only said a placeholder could not be resolved. Both
   are loud. One of them is useful.
+- **The cart is a table keyed by a cookie**: there are no accounts, so a `cart_id` cookie
+  identifies an anonymous visitor and `cart` plus `cart_line` rows hold what they picked.
+  Needs no new dependency, unlike Spring Session. Survives restarts, which an in-memory
+  HTTP session does not, and it is inspectable in psql like every other fact this project
+  cares about.
+- **No quantity cap**: a visitor can add as many of one sticker as they like. Capping
+  would be arbitrary and it is not what protects the total, since goal 7 is about pricing
+  server-side rather than limiting what the browser asks for. Stripe imposes its own limit
+  of 999,999 per line, so that boundary gets handled rather than ignored.
+- **The empty cart is its own screen**: someone can open the cart with nothing in it.
+  "Your cart is empty" and "no stickers are listed" are different statements and reusing
+  one screen for both would say the wrong thing.
 - **The cancel URL carries the sticker id**, so "Try again" returns to the same purchase
   rather than the catalog.
 
