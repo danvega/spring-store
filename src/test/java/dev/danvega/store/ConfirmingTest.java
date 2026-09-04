@@ -28,13 +28,7 @@ class ConfirmingTest extends IntegrationTest {
     @Autowired
     PurchaseOrderRepository orders;
 
-    @Autowired
-    StubStripeConfiguration.StubStripeGateway stripe;
 
-    private String buy(String slug) {
-        client.post().uri("/buy/{slug}", slug).exchange().expectStatus().is3xxRedirection();
-        return stripe.lastSessionId();
-    }
 
     private void webhookArrives(String sessionId) {
         var at = Instant.now();

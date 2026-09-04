@@ -22,13 +22,10 @@ class WebhookTest extends IntegrationTest {
     @Autowired
     PurchaseOrderRepository orders;
 
-    @Autowired
-    StubStripeConfiguration.StubStripeGateway stripe;
 
     @Test
     void a_signed_completed_event_records_the_payment() {
-        client.post().uri("/buy/autowired").exchange().expectStatus().is3xxRedirection();
-        var sessionId = stripe.lastSessionId();
+        var sessionId = buy("autowired");
         assertThat(orders.findByStripeSessionId(sessionId).orElseThrow().isRecorded()).isFalse();
 
         var paidAt = Instant.now();

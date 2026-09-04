@@ -3,9 +3,12 @@ package dev.danvega.store.web;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 import dev.danvega.store.catalog.StickerRepository;
 import dev.danvega.store.order.ConfirmingStage;
+import dev.danvega.store.order.PurchaseOrder;
 import dev.danvega.store.order.PurchaseOrderRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -37,11 +40,9 @@ class OrderController {
 
         var order = orders.findByStripeSessionId(sessionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No order for that session"));
-        var sticker = stickers.findById(order.stickerId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No sticker for that order"));
 
         model.addAttribute("order", order);
-        model.addAttribute("sticker", sticker);
+        model.addAttribute("lines", view(order));
 
         if (order.isRecorded()) {
             return "confirmation";
@@ -57,6 +58,24 @@ class OrderController {
                 .queryParam("since", arrivedAt.getEpochSecond())
                 .toUriString());
         return "confirming";
+    }
+
+    /** The cart still holds everything, so this offers the cart rather than one sticker. */
+    @GetMapping("/cancelled")
+    String cancelled() {
+        return "cancelled";
+    }
+
+    private List<LineView> view(PurchaseOrder order) {
+        var views = new ArrayList<LineView>();
+        for (var line : order.lines()) {
+            stickers.findById(line.stickerId())
+                    .ifPresent(sticker -> views.add(new LineView(sticker, line.quantity(), line.unitPriceCents())));
+        }
+        // A Set comes back from the database in hash order, so without this the lines
+        // render in an order unrelated to how they were added. Match the catalog instead.
+        views.sort(java.util.Comparator.comparingInt(v -> v.sticker().sortOrder()));
+        return views;
     }
 
     /**
@@ -76,11 +95,5 @@ class OrderController {
         catch (NumberFormatException | DateTimeException e) {
             return now;
         }
-    }
-
-    @GetMapping("/cancelled")
-    String cancelled(@RequestParam(name = "sticker", required = false) String slug, Model model) {
-        model.addAttribute("sticker", slug == null ? null : stickers.findBySlug(slug).orElse(null));
-        return "cancelled";
     }
 }

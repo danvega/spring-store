@@ -1,11 +1,12 @@
-@import dev.danvega.store.catalog.Sticker
+@import java.util.List
 @import dev.danvega.store.order.ConfirmingStage
 @import dev.danvega.store.order.PurchaseOrder
+@import dev.danvega.store.web.LineView
 @import java.time.Instant
 @import java.time.ZoneOffset
 @import java.time.format.DateTimeFormatter
 @param PurchaseOrder order
-@param Sticker sticker
+@param List<LineView> lines
 @param ConfirmingStage stage
 @param Instant arrivedAt
 @param long waitedSeconds
@@ -54,19 +55,8 @@
             </p>
         @endif
 
-        <div class="mt-8 border-4 border-[color:var(--ink)] rounded-2xl p-5 flex items-center gap-6">
-            <div class="tile w-32 h-32 shrink-0 flex items-center justify-center p-3 text-center"
-                 style="background:${sticker.colorHex()}">
-                @if(sticker.isDark())
-                    <span class="mono text-sm font-bold" style="color:#7ED957">${sticker.name()}</span>
-                @else
-                    <span class="text-sm font-extrabold leading-tight">${sticker.name()}</span>
-                @endif
-            </div>
-            <div>
-                <p class="text-2xl md:text-3xl font-extrabold leading-tight">${sticker.name()}</p>
-                <p class="mono mt-1 text-xl">${order.amountDisplay()} USD</p>
-            </div>
+        <div class="mt-8">
+            @template._lines(lines = lines, totalDisplay = order.totalDisplay())
         </div>
 
         @if(stage == ConfirmingStage.NOT_RECORDED)

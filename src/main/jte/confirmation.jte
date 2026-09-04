@@ -1,9 +1,10 @@
-@import dev.danvega.store.catalog.Sticker
+@import java.util.List
 @import dev.danvega.store.order.PurchaseOrder
+@import dev.danvega.store.web.LineView
 @import java.time.ZoneOffset
 @import java.time.format.DateTimeFormatter
 @param PurchaseOrder order
-@param Sticker sticker
+@param List<LineView> lines
 
 !{var stamp = DateTimeFormatter.ofPattern("d MMM uuuu, HH:mm 'UTC'").withZone(ZoneOffset.UTC);}
 
@@ -11,25 +12,18 @@
     <div class="card p-8 md:p-12">
         <span class="pill inline-block px-4 py-2" style="background:#7ED957">Payment received</span>
 
-        <div class="mt-8 flex flex-col sm:flex-row gap-8 items-start">
-            <div class="tile w-44 h-44 shrink-0 flex items-center justify-center p-4 text-center"
-                 style="background:${sticker.colorHex()}">
-                @if(sticker.isDark())
-                    <span class="mono font-bold" style="color:#7ED957">${sticker.name()}</span>
-                @else
-                    <span class="font-extrabold leading-tight">${sticker.name()}</span>
-                @endif
-            </div>
-            <div>
-                <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">${sticker.name()}</h1>
-                <p class="mono mt-2 text-2xl">${order.amountDisplay()} USD paid</p>
-            </div>
+        <h1 class="mt-6 text-4xl md:text-5xl font-extrabold">
+            ${order.itemCount()} ${order.itemCount() == 1 ? "sticker" : "stickers"} paid for.
+        </h1>
+
+        <div class="mt-8">
+            @template._lines(lines = lines, totalDisplay = order.totalDisplay())
         </div>
 
-        <dl class="mt-10 border-4 border-[color:var(--ink)] rounded-2xl overflow-hidden mono">
+        <dl class="mt-8 border-4 border-[color:var(--ink)] rounded-2xl overflow-hidden mono">
             <div class="flex justify-between px-6 py-4">
                 <dt class="opacity-60">Amount paid</dt>
-                <dd class="font-bold">${order.amountDisplay()} USD</dd>
+                <dd class="font-bold">${order.totalDisplay()} USD</dd>
             </div>
             <div class="flex justify-between px-6 py-4 border-t-4 border-[color:var(--ink)]">
                 <dt class="opacity-60">Order reference</dt>

@@ -1,6 +1,12 @@
 package dev.danvega.store.checkout;
 
+import java.util.LinkedHashSet;
+import java.util.List;
+
+import dev.danvega.store.cart.Cart;
 import dev.danvega.store.catalog.Sticker;
+import dev.danvega.store.catalog.StickerRepository;
+import dev.danvega.store.order.OrderLine;
 import dev.danvega.store.order.OrderReference;
 import dev.danvega.store.order.PurchaseOrder;
 import dev.danvega.store.order.PurchaseOrderRepository;
@@ -27,20 +33,36 @@ public class CheckoutService {
 
     private final StripeGateway stripe;
     private final PurchaseOrderRepository orders;
+    private final StickerRepository stickers;
     private final StripeProperties properties;
 
-    CheckoutService(StripeGateway stripe, PurchaseOrderRepository orders, StripeProperties properties) {
+    CheckoutService(StripeGateway stripe, PurchaseOrderRepository orders, StickerRepository stickers,
+            StripeProperties properties) {
         this.stripe = stripe;
         this.orders = orders;
+        this.stickers = stickers;
         this.properties = properties;
     }
 
-    public String start(Sticker sticker) {
-        var order = orders.save(
-                PurchaseOrder.pending(OrderReference.next(), sticker.id(), sticker.priceCents()));
+    /**
+     * Every price here is read from the sticker table. Nothing about the amount comes from
+     * the browser, which is the whole of goal 7 and the reason a cart was worth building.
+     */
+    public String start(Cart cart) {
+        var orderLines = new LinkedHashSet<OrderLine>();
+        var stripeLines = new java.util.ArrayList<StripeGateway.Line>();
 
-        var session = stripe.start(sticker, order.reference(), successUrl(), cancelUrl(sticker));
+        for (var line : cart.lines()) {
+            var sticker = stickers.findById(line.stickerId())
+                    .orElseThrow(() -> new CheckoutFailedException(
+                            "Cart holds sticker " + line.stickerId() + " which no longer exists",
+                            new IllegalStateException()));
+            orderLines.add(new OrderLine(sticker.id(), line.quantity(), sticker.priceCents()));
+            stripeLines.add(new StripeGateway.Line(sticker.name(), sticker.priceCents(), line.quantity()));
+        }
 
+        var order = orders.save(PurchaseOrder.pending(OrderReference.next(), orderLines, cart.cartId()));
+        var session = stripe.start(List.copyOf(stripeLines), order.reference(), successUrl(), cancelUrl());
         orders.save(order.attachSession(session.id()));
         return session.url();
     }
@@ -49,7 +71,8 @@ public class CheckoutService {
         return properties.baseUrl() + "/order/confirm?session_id=" + SESSION_ID_PLACEHOLDER;
     }
 
-    private String cancelUrl(Sticker sticker) {
-        return properties.baseUrl() + "/cancelled?sticker=" + sticker.slug();
+    /** No sticker id any more. Cancelling returns to a cart that still holds everything. */
+    private String cancelUrl() {
+        return properties.baseUrl() + "/cancelled";
     }
 }

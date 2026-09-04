@@ -3,6 +3,7 @@ package dev.danvega.store;
 import java.time.Instant;
 
 import dev.danvega.store.catalog.StickerRepository;
+import dev.danvega.store.order.OrderLine;
 import dev.danvega.store.order.PurchaseOrder;
 import dev.danvega.store.order.PurchaseOrderRepository;
 import dev.danvega.store.webhook.StripeEventRepository;
@@ -39,7 +40,8 @@ class RecoveryTest extends IntegrationTest {
     /** An order that got as far as being written, but never got its session id back. */
     private PurchaseOrder orderWithNoSession(String reference) {
         var sticker = stickers.findBySlug("ship-it").orElseThrow();
-        return orders.save(PurchaseOrder.pending(reference, sticker.id(), 99));
+        return orders.save(PurchaseOrder.pending(reference,
+                java.util.Set.of(new OrderLine(sticker.id(), 1, 99)), null));
     }
 
     private void deliver(String payload) {

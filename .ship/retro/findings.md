@@ -30,6 +30,11 @@ promoted on the structural test instead of waiting for a count that will not arr
   16 against 17 and then 25 against 24. Harmless both times, same reflex both times. One
   more and it clears the bar.
 
+- **Running `./verify` from whatever directory the last command left behind.** (3: 3 Sep
+  2026) Exit 127 three times, because a `cd` into the test package persisted and `./verify`
+  lives at the root. Costs a round trip each time and produces a failure that looks like a
+  build break until you read the exit code. Clears the recurring bar at three.
+
 ## Promoted
 
 - **Proofs that arrange their own sequence.** (3 Sep 2026) Became the "the proof has to run

@@ -33,6 +33,6 @@ class StorefrontTest extends IntegrationTest {
         client.get().uri("/").exchange()
                 .expectStatus().isOk()
                 .expectBody(String.class)
-                .value(page -> assertThat(page).contains("action=\"/buy/ship-it\""));
+                .value(page -> assertThat(page).contains("action=\"/cart/add/ship-it\""));
     }
 }

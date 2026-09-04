@@ -22,13 +22,10 @@ class ConfirmationTest extends IntegrationTest {
     @Autowired
     PurchaseOrderRepository orders;
 
-    @Autowired
-    StubStripeConfiguration.StubStripeGateway stripe;
 
     @Test
     void shows_the_paid_order_with_its_reference_and_amount() {
-        client.post().uri("/buy/spring-boot-leaf").exchange().expectStatus().is3xxRedirection();
-        var sessionId = stripe.lastSessionId();
+        var sessionId = buy("spring-boot-leaf");
 
         var paidAt = Instant.now();
         var payload = completedEvent(sessionId, paidAt);

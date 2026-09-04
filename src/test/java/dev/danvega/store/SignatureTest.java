@@ -27,13 +27,7 @@ class SignatureTest extends IntegrationTest {
     @Autowired
     StripeEventRepository events;
 
-    private String buy(String slug) {
-        client.post().uri("/buy/{slug}", slug).exchange().expectStatus().is3xxRedirection();
-        return stripe.lastSessionId();
-    }
 
-    @Autowired
-    StubStripeConfiguration.StubStripeGateway stripe;
 
     @Test
     void a_wrong_signature_is_rejected_and_records_nothing() {

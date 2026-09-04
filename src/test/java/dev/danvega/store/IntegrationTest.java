@@ -2,6 +2,7 @@ package dev.danvega.store;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.UUID;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -44,9 +45,46 @@ public abstract class IntegrationTest {
      */
     protected RestTestClient client;
 
+    @Autowired
+    protected StubStripeConfiguration.StubStripeGateway stripe;
+
+    /** A fresh anonymous visitor per test. There are no accounts, so this is the identity. */
+    protected String cartCookie;
+
     @BeforeEach
     void bindClient() {
         this.client = RestTestClient.bindToApplicationContext(this.context).build();
+        this.cartCookie = UUID.randomUUID().toString();
+    }
+
+    /** Adds through the real endpoint. A cart row built directly would prove nothing. */
+    protected void addToCart(String slug) {
+        client.post().uri("/cart/add/{slug}", slug)
+                .cookie("cart_id", cartCookie)
+                .exchange()
+                .expectStatus().is3xxRedirection();
+    }
+
+    protected void setQuantity(Long stickerId, int quantity) {
+        client.post().uri("/cart/quantity/{id}?quantity={q}", stickerId, quantity)
+                .cookie("cart_id", cartCookie)
+                .exchange()
+                .expectStatus().is3xxRedirection();
+    }
+
+    /** Checks out the cart and returns the Stripe session id the stub handed back. */
+    protected String checkout() {
+        client.post().uri("/cart/checkout")
+                .cookie("cart_id", cartCookie)
+                .exchange()
+                .expectStatus().is3xxRedirection();
+        return stripe.lastSessionId();
+    }
+
+    /** The common case: one sticker, straight through to a Stripe session. */
+    protected String buy(String slug) {
+        addToCart(slug);
+        return checkout();
     }
 
     /** A checkout.session.completed event carrying the order reference Stripe echoes back. */

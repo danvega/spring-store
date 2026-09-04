@@ -156,8 +156,17 @@ charged is the amount the store meant to charge.
 - **The empty cart is its own screen**: someone can open the cart with nothing in it.
   "Your cart is empty" and "no stickers are listed" are different statements and reusing
   one screen for both would say the wrong thing.
-- **The cancel URL carries the sticker id**, so "Try again" returns to the same purchase
-  rather than the catalog.
+- **The cart empties when the payment is recorded, not when checkout starts**, so
+  cancelling at Stripe does not cost you your cart. A refresh of checkout only creates a
+  second unpaid order, which is harmless. `purchase_order` carries the `cart_id` so the
+  webhook knows which cart to empty. This replaces an earlier decision that the cancel URL
+  carried a sticker id: its reason was returning you to the same purchase, and the cart
+  now does that better.
+- **Line prices are copied onto the order at checkout**, never joined from the sticker at
+  read time. A later price change must not rewrite what somebody already paid.
+- **Recording a payment subtracts the purchased quantities from the cart**, it does not
+  empty it. The cart stays live while the Stripe page is open, so a buyer can add to it,
+  and clearing it wholesale would delete something they never bought.
 
 ## Stops
 
@@ -176,18 +185,16 @@ end-of-run batch.
 
 ## Current state
 
-**Works today:** all five goals, the MVP complete. Buying a sticker writes the order,
-redirects to Stripe Checkout, and a signed webhook records the payment. Landing back
-before the webhook shows a confirming state that never claims the store has recorded
-anything. Forged, unsigned and tampered webhooks are rejected and leave nothing behind. A
-redelivered event is claimed once and never processed twice. A clone with no Stripe keys
-refuses to start and says where to get them, and no key material is tracked by git.
-33 tests behind `./verify`, all green.
+**Works today:** goals 1 through 6. Stickers are added to a cart kept in the database and
+found by a cookie, quantities can be changed, and checking out turns the whole cart into
+one Stripe session and one order with lines. Landing back before the webhook shows a
+confirming state that never claims the store has recorded anything. Forged, unsigned and
+tampered webhooks are rejected. A redelivered event is claimed once. A clone with no keys
+refuses to start. 46 tests behind `./verify`, all green.
 **In progress:** nothing. Goal 1's browser round trip was proven against live Stripe
 test mode on 3 September 2026, evidence in `.ship/verify/evidence/001-goal-1-live-stripe.md`.
 The measured gap between Stripe's event time and the app recording it was about 1 second.
-**Next:** goals 6 through 8, the cart. Design round 3 first, since no cart screen exists
-and the storefront's button changes from Buy to Add. Then a decision on where an anonymous
-visitor's cart lives, which is unrecorded and may be a Stop if it needs a new dependency.
-Then the order gains lines, which is rework across the confirmation, confirming and
-cancelled screens.
+**Next:** goals 7 and 8, spec 007. Pricing is already server-side, so this is the proofs:
+a tampered quantity or price is ignored, and a webhook whose `amount_total` disagrees with
+the order total is refused rather than recorded. Stripe's limit of 999,999 per line needs
+a response better than a 500 and belongs there too.

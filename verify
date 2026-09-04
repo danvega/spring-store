@@ -48,6 +48,8 @@ usage: ./verify [target]
   recovery       an order with no session id is still found by its reference
   startup        the app refuses to start without Stripe keys, and says why
   secrets        no key material is tracked by git
+  cart           adding, changing and removing items in a cookie-keyed cart
+  cart-checkout  a multi-line cart becomes one Stripe session and one order
 
 Targets that cannot run unattended are listed in PRODUCT.md under Stops.
 USAGE
@@ -66,6 +68,8 @@ case "${1:-all}" in
   recovery)     $MVN test -Dtest=RecoveryTest ;;
   startup)      $MVN test -Dtest=StartupTest ;;
   secrets)      check_secrets ;;
+  cart)         $MVN test -Dtest=CartTest ;;
+  cart-checkout) $MVN test -Dtest=CartCheckoutTest ;;
   -h|--help|help) usage ;;
   *) echo "unknown target: $1" >&2; usage >&2; exit 2 ;;
 esac

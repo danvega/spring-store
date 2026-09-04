@@ -1,8 +1,8 @@
 package dev.danvega.store;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import dev.danvega.store.catalog.Sticker;
 import dev.danvega.store.checkout.CheckoutFailedException;
 import dev.danvega.store.checkout.StripeGateway;
 
@@ -25,10 +25,9 @@ public class StubStripeConfiguration {
     }
 
     /**
-     * Session ids are unique per call, not per sticker. Every test class shares one
-     * Postgres, and stripe_session_id is unique, so a slug-derived id makes buying the
-     * same sticker twice anywhere in the suite fail on a constraint rather than on the
-     * thing under test.
+     * Session ids are unique per call, not per cart. Every test class shares one Postgres,
+     * and stripe_session_id is unique, so a repeatable id makes checking out twice
+     * anywhere in the suite fail on a constraint rather than on the thing under test.
      */
     public static class StubStripeGateway implements StripeGateway {
 
@@ -38,6 +37,8 @@ public class StubStripeConfiguration {
 
         private volatile String lastOrderReference;
 
+        private volatile List<Line> lastLines = List.of();
+
         private volatile boolean failNext;
 
         /** Make the next call blow up, so a proof can fail the remote side on demand. */
@@ -46,24 +47,29 @@ public class StubStripeConfiguration {
         }
 
         @Override
-        public CheckoutSession start(Sticker sticker, String orderReference, String successUrl, String cancelUrl) {
+        public CheckoutSession start(List<Line> lines, String orderReference, String successUrl, String cancelUrl) {
             if (failNext) {
                 failNext = false;
                 throw new CheckoutFailedException("stubbed Stripe failure", new IllegalStateException("stub"));
             }
-            var id = "cs_test_%s_%d".formatted(sticker.slug(), counter.incrementAndGet());
+            var id = "cs_test_" + counter.incrementAndGet();
             this.lastSessionId = id;
             this.lastOrderReference = orderReference;
+            this.lastLines = List.copyOf(lines);
             return new CheckoutSession(id, "https://checkout.stripe.test/pay/" + id);
+        }
+
+        public String lastSessionId() {
+            return lastSessionId;
         }
 
         public String lastOrderReference() {
             return lastOrderReference;
         }
 
-        /** The session id from the most recent purchase, for asserting against. */
-        public String lastSessionId() {
-            return lastSessionId;
+        /** What Stripe was actually asked to charge for. */
+        public List<Line> lastLines() {
+            return lastLines;
         }
     }
 }

@@ -19,17 +19,13 @@ class CheckoutTest extends IntegrationTest {
     @Autowired
     PurchaseOrderRepository orders;
 
-    @Autowired
-    StubStripeConfiguration.StubStripeGateway stripe;
 
     @Test
     void buying_redirects_to_stripe_and_leaves_a_pending_order() {
-        client.post().uri("/buy/ship-it").exchange().expectStatus().is3xxRedirection();
-
-        var sessionId = stripe.lastSessionId();
+        var sessionId = buy("ship-it");
         var order = orders.findByStripeSessionId(sessionId).orElseThrow();
 
-        assertThat(order.amountCents()).isEqualTo(99);
+        assertThat(order.totalCents()).isEqualTo(99);
         assertThat(order.reference()).matches("SPR-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}");
         assertThat(order.isRecorded()).as("the app has not heard from Stripe yet").isFalse();
         assertThat(order.paidAtStripe()).isNull();
@@ -37,10 +33,8 @@ class CheckoutTest extends IntegrationTest {
 
     @Test
     void buying_the_same_sticker_twice_creates_two_orders() {
-        client.post().uri("/buy/ship-it").exchange().expectStatus().is3xxRedirection();
-        var first = stripe.lastSessionId();
-        client.post().uri("/buy/ship-it").exchange().expectStatus().is3xxRedirection();
-        var second = stripe.lastSessionId();
+        var first = buy("ship-it");
+        var second = buy("ship-it");
 
         assertThat(first).isNotEqualTo(second);
         assertThat(orders.findByStripeSessionId(first)).isPresent();
@@ -52,8 +46,10 @@ class CheckoutTest extends IntegrationTest {
         var nullSessionOrdersBefore = orders.findAll().stream()
                 .filter(order -> order.stripeSessionId() == null).count();
 
+        addToCart("ship-it");
         stripe.failNext();
-        client.post().uri("/buy/ship-it").exchange().expectStatus().is5xxServerError();
+        client.post().uri("/cart/checkout").cookie("cart_id", cartCookie)
+                .exchange().expectStatus().is5xxServerError();
 
         var nullSessionOrdersAfter = orders.findAll().stream()
                 .filter(order -> order.stripeSessionId() == null).count();
@@ -65,6 +61,7 @@ class CheckoutTest extends IntegrationTest {
 
     @Test
     void an_unknown_sticker_is_a_404() {
-        client.post().uri("/buy/not-a-real-sticker").exchange().expectStatus().isNotFound();
+        client.post().uri("/cart/add/not-a-real-sticker").cookie("cart_id", cartCookie)
+                .exchange().expectStatus().isNotFound();
     }
 }

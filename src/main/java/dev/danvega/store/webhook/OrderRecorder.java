@@ -2,6 +2,7 @@ package dev.danvega.store.webhook;
 
 import java.time.Instant;
 
+import dev.danvega.store.cart.CartService;
 import dev.danvega.store.order.PurchaseOrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,10 +13,12 @@ public class OrderRecorder {
 
     private final PurchaseOrderRepository orders;
     private final StripeEventRepository events;
+    private final CartService carts;
 
-    OrderRecorder(PurchaseOrderRepository orders, StripeEventRepository events) {
+    OrderRecorder(PurchaseOrderRepository orders, StripeEventRepository events, CartService carts) {
         this.orders = orders;
         this.events = events;
+        this.carts = carts;
     }
 
     /**
@@ -54,6 +57,17 @@ public class OrderRecorder {
         // Matched by reference means the session id never landed. Attach it now so the
         // confirming page and any redelivery find this order the direct way.
         var matched = order.stripeSessionId() == null ? order.attachSession(stripeSessionId) : order;
-        return new RecordOutcome.Recorded(orders.save(matched.recordPayment(paidAtStripe, Instant.now())));
+        var recorded = orders.save(matched.recordPayment(paidAtStripe, Instant.now()));
+
+        // The cart is reduced when the payment is recorded, not when checkout starts.
+        // Emptying earlier would lose the cart of anyone who cancels at Stripe, and
+        // emptying it wholesale would delete anything added while Stripe was open.
+        if (recorded.cartId() != null) {
+            carts.removePurchased(recorded.cartId(), recorded.lines().stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                            dev.danvega.store.order.OrderLine::stickerId,
+                            dev.danvega.store.order.OrderLine::quantity)));
+        }
+        return new RecordOutcome.Recorded(recorded);
     }
 }

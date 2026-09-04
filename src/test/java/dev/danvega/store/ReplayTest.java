@@ -3,6 +3,7 @@ package dev.danvega.store;
 import java.time.Instant;
 
 import dev.danvega.store.catalog.StickerRepository;
+import dev.danvega.store.order.OrderLine;
 import dev.danvega.store.order.PurchaseOrder;
 import dev.danvega.store.order.PurchaseOrderRepository;
 import dev.danvega.store.webhook.StripeEventRepository;
@@ -33,16 +34,10 @@ class ReplayTest extends IntegrationTest {
     @Autowired
     StripeEventRepository events;
 
-    @Autowired
-    StubStripeConfiguration.StubStripeGateway stripe;
 
     @Autowired
     StickerRepository stickers;
 
-    private String buy(String slug) {
-        client.post().uri("/buy/{slug}", slug).exchange().expectStatus().is3xxRedirection();
-        return stripe.lastSessionId();
-    }
 
     /** One delivery of an already-built payload, signed now the way a retry would be. */
     private void deliver(String payload) {
@@ -106,7 +101,8 @@ class ReplayTest extends IntegrationTest {
 
         // The order is put right, and Stripe redelivers.
         var sticker = stickers.findBySlug("ship-it").orElseThrow();
-        orders.save(PurchaseOrder.pending("SPR-FIXT-0001", sticker.id(), 99).attachSession(sessionId));
+        orders.save(PurchaseOrder.pending("SPR-FIXT-0001",
+                java.util.Set.of(new OrderLine(sticker.id(), 1, 99)), null).attachSession(sessionId));
         deliver(payload);
 
         assertThat(orders.findByStripeSessionId(sessionId).orElseThrow().isRecorded()).isTrue();
