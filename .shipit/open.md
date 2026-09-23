@@ -33,3 +33,8 @@ Read this alongside PRODUCT.md's `Next:` line at the start of a session.
   reachable today, because a reference maps to exactly one session, so the event id guard
   catches every real redelivery. It would become reachable if anything ever gave two
   Stripe sessions the same `client_reference_id`.
+- **A cart line at int's maximum wraps when it grows.** Only a tampered request can set
+  a quantity of 2,147,483,647. From there, Add computes `quantity + 1` in `CartLine.plus`,
+  the result wraps negative, and the request fails with a 500. The + button does the same
+  sum in `cart.jte`, and its negative result clamps to 0 and removes the line. Nothing is
+  ever charged. If it matters, saturate the add rather than cap the cart.

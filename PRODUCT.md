@@ -172,8 +172,11 @@ Beyond the MVP, both chosen on 3 September 2026 and neither started:
   Goal 8's check is exact integer equality, where BigDecimal would need `compareTo` rather
   than `equals` because 3.96 and 3.960 differ by scale. Nothing here divides, so nothing
   rounds. Revisit if tax, discounts or a second currency ever arrive, all of which are
-  non-goals today. Overflow is bounded: Stripe caps a line at 999,999, so the worst case
-  is about 594 million cents against int's 2.1 billion.
+  non-goals today. Orders stay int: checkout refuses a line over Stripe's 999,999, so the
+  worst order is about 594 million cents against int's 2.1 billion. The cart enforces no
+  such limit, so its line totals, total and item count are long. Assuming the order's
+  bound covered the cart too was a bug: two lines of two billion showed a believable
+  wrong total.
 - **No quantity cap**: a visitor can add as many of one sticker as they like. Capping
   would be arbitrary and it is not what protects the total, since goal 7 is about pricing
   server-side rather than limiting what the browser asks for. Stripe imposes its own limit
@@ -217,7 +220,7 @@ tampered request changes only quantities. Landing back before the webhook shows 
 confirming state that never claims the store has recorded anything. Forged, unsigned and
 tampered webhooks are rejected, a redelivery is claimed once, and an event whose
 `amount_total` disagrees with the order total is refused rather than recorded. A clone
-with no keys refuses to start. 58 tests behind `./verify`, all green.
+with no keys refuses to start. 59 tests behind `./verify`, all green.
 **In progress:** nothing. Goal 1's browser round trip was proven against live Stripe
 test mode on 3 September 2026, evidence in `.shipit/verify/evidence/001-goal-1-live-stripe.md`.
 The measured gap between Stripe's event time and the app recording it was about 1 second.

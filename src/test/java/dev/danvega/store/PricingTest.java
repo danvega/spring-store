@@ -108,4 +108,29 @@ class PricingTest extends IntegrationTest {
                 .as("Stripe was never called")
                 .noneSatisfy(line -> assertThat(line.quantity()).isEqualTo(1_000_000));
     }
+
+    @Test
+    void a_huge_quantity_shows_the_true_total_rather_than_wrapping_negative() {
+        addToCart("ship-it");
+        addToCart("autowired");
+        setQuantity(stickers.findBySlug("ship-it").orElseThrow().id(), 2_000_000_000);
+        setQuantity(stickers.findBySlug("autowired").orElseThrow().id(), 2_000_000_000);
+
+        // No cap is a recorded decision, so the cart holds any quantity an int can carry.
+        // Two lines at two billion overflow an int line total, cart total and item count.
+        var cartPage = client.get().uri("/cart").cookie("cart_id", cartCookie).exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).returnResult().getResponseBody();
+        assertThat(cartPage)
+                .as("198,000,000,000 cents a line, and twice that in total")
+                .contains("$1980000000.00")
+                .contains("$3960000000.00")
+                .contains("4000000000 stickers")
+                .doesNotContain("$-");
+
+        var storefront = client.get().uri("/").cookie("cart_id", cartCookie).exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).returnResult().getResponseBody();
+        assertThat(storefront).as("the cart count in the header").contains(">4000000000<");
+    }
 }

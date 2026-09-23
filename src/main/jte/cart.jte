@@ -2,7 +2,7 @@
 @import dev.danvega.store.web.LineView
 @param List<LineView> lines
 @param String totalDisplay
-@param int itemCount
+@param long itemCount
 @param String error = null
 
 @template.layout(title = "Your cart - Spring Store", content = @`

@@ -22,9 +22,12 @@ public record Cart(@Id Long id, String cartId, Instant createdAt, Set<CartLine> 
         return lines.isEmpty();
     }
 
-    /** Total number of stickers, not number of lines. Two of one sticker counts as two. */
-    public int itemCount() {
-        return lines.stream().mapToInt(CartLine::quantity).sum();
+    /**
+     * Total number of stickers, not number of lines. Two of one sticker counts as two.
+     * Long, because nothing caps a line, so a few large lines can pass int's limit.
+     */
+    public long itemCount() {
+        return lines.stream().mapToLong(CartLine::quantity).sum();
     }
 
     public int quantityOf(Long stickerId) {

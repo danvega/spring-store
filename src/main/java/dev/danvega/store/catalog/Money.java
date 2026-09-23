@@ -6,7 +6,7 @@ public final class Money {
     private Money() {
     }
 
-    public static String display(int cents) {
+    public static String display(long cents) {
         return "$%d.%02d".formatted(cents / 100, cents % 100);
     }
 }

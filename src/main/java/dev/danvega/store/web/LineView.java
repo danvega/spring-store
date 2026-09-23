@@ -9,8 +9,12 @@ import dev.danvega.store.catalog.Sticker;
  */
 public record LineView(Sticker sticker, int quantity, int unitPriceCents) {
 
-    public int lineTotalCents() {
-        return quantity * unitPriceCents;
+    /**
+     * Long, because the cart caps nothing and a line can hold any int. Order lines stay int:
+     * checkout refuses a line over Stripe's 999,999 before an order line is ever written.
+     */
+    public long lineTotalCents() {
+        return (long) quantity * unitPriceCents;
     }
 
     public String unitPriceDisplay() {

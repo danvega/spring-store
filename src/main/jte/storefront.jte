@@ -2,7 +2,7 @@
 @import java.util.Map
 @import dev.danvega.store.catalog.Sticker
 @param List<Sticker> stickers
-@param int itemCount
+@param long itemCount
 @param Map<Long, Integer> inCart
 
 @template.layout(title = "Spring Store", content = @`

@@ -49,7 +49,7 @@ class CartController {
         var lines = view(cart);
         model.addAttribute("lines", lines);
         model.addAttribute("totalDisplay", Money.display(
-                lines.stream().mapToInt(LineView::lineTotalCents).sum()));
+                lines.stream().mapToLong(LineView::lineTotalCents).sum()));
         model.addAttribute("itemCount", cart.itemCount());
         model.addAttribute("error", error);
         return "cart";
