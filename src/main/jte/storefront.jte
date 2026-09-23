@@ -9,7 +9,10 @@
     <div class="card p-8 md:p-12">
         <div class="flex items-start justify-between gap-6">
             <div>
-                <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight">Spring Store</h1>
+                <div class="flex items-center gap-4">
+                    <img src="/logo.svg" alt="" width="64" height="64" class="h-14 w-14 md:h-16 md:w-16 shrink-0">
+                    <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight">Spring Store</h1>
+                </div>
                 <p class="mt-3 text-lg font-medium opacity-80 max-w-xl">
                     Six vinyl stickers, 99&cent; each. Add what you want, then check out once.
                     Nothing ships.
@@ -40,7 +43,9 @@
                             @if(sticker.isDark())
                                 <span class="mono text-2xl font-bold" style="color:#7ED957">${sticker.name()}</span>
                             @else
-                                <span class="text-2xl font-extrabold leading-tight">${sticker.name()}</span>
+                                <%-- A word this long cannot wrap, so at full size it runs edge to edge. --%>
+                                !{var longWord = java.util.Arrays.stream(sticker.name().split(" ")).anyMatch(word -> word.length() > 14);}
+                                <span class="${longWord ? "text-lg" : "text-2xl"} font-extrabold leading-tight">${sticker.name()}</span>
                             @endif
                         </div>
                         <form method="post" action="/cart/add/${sticker.slug()}" class="mt-4">

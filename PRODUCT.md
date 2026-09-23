@@ -121,6 +121,12 @@ Beyond the MVP, both chosen on 3 September 2026 and neither started:
 - **Visual direction**: neo-brutalist. Cream ground, thick black borders, hard offset
   shadows, chunky rounded corners, one flat color per sticker. Locked by design round 1,
   so later rounds match it instead of reopening it.
+- **Logo: a flat spring leaf**, green like the Spring Boot Leaf sticker, with the same ink
+  outline and hard shadow as the cards. It sits beside the title on the storefront only.
+  The favicon is the same leaf without the shadow or side veins, so it still reads at
+  16px. It is served as SVG, with a 32px PNG for browsers that cannot use SVG icons. Dan
+  asked for it directly on 23 September 2026, so it skipped a design round. It extends
+  round 1's direction rather than opening a new one.
 - **Machine values in monospace**: amounts, order references, timestamps, the test card
   number. Prose stays sans. Came out of the design and earns its place, because it makes
   reconcilable values visually distinct from copy.
@@ -220,7 +226,7 @@ tampered request changes only quantities. Landing back before the webhook shows 
 confirming state that never claims the store has recorded anything. Forged, unsigned and
 tampered webhooks are rejected, a redelivery is claimed once, and an event whose
 `amount_total` disagrees with the order total is refused rather than recorded. A clone
-with no keys refuses to start. 59 tests behind `./verify`, all green.
+with no keys refuses to start. 60 tests behind `./verify`, all green.
 **In progress:** nothing. Goal 1's browser round trip was proven against live Stripe
 test mode on 3 September 2026, evidence in `.shipit/verify/evidence/001-goal-1-live-stripe.md`.
 The measured gap between Stripe's event time and the app recording it was about 1 second.
