@@ -32,7 +32,7 @@ class ConfirmingTest extends IntegrationTest {
 
     private void webhookArrives(String sessionId) {
         var at = Instant.now();
-        var payload = completedEvent(sessionId, at);
+        var payload = paidEvent(sessionId, at);
         client.post().uri("/stripe/webhook")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Stripe-Signature", stripeSignature(payload, at))

@@ -3,6 +3,7 @@
 @param List<LineView> lines
 @param String totalDisplay
 @param int itemCount
+@param String error = null
 
 @template.layout(title = "Your cart - Spring Store", content = @`
     <div class="card p-8 md:p-12">
@@ -13,6 +14,12 @@
         <p class="mt-3 text-lg font-medium opacity-80">
             ${itemCount} ${itemCount == 1 ? "sticker" : "stickers"}. Nothing ships, nothing is charged.
         </p>
+
+        @if(error != null)
+            <div class="mt-6 p-5 rounded-2xl" style="border:4px solid var(--ink);background:#FF7A6B">
+                <p class="font-extrabold text-lg">${error}</p>
+            </div>
+        @endif
 
         <div class="mt-8 border-4 border-[color:var(--ink)] rounded-2xl overflow-hidden">
             @for(int i = 0; i < lines.size(); i++)

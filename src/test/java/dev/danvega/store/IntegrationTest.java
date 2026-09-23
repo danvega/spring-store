@@ -13,6 +13,8 @@ import org.junit.jupiter.api.BeforeEach;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import dev.danvega.store.order.PurchaseOrder;
+import dev.danvega.store.order.PurchaseOrderRepository;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -47,6 +49,9 @@ public abstract class IntegrationTest {
 
     @Autowired
     protected StubStripeConfiguration.StubStripeGateway stripe;
+
+    @Autowired
+    protected PurchaseOrderRepository orderRepo;
 
     /** A fresh anonymous visitor per test. There are no accounts, so this is the identity. */
     protected String cartCookie;
@@ -88,14 +93,29 @@ public abstract class IntegrationTest {
     }
 
     /** A checkout.session.completed event carrying the order reference Stripe echoes back. */
-    public static String completedEvent(String sessionId, String clientReferenceId, Instant created) {
-        return completedEvent(sessionId, created)
+    public static String completedEvent(String sessionId, String clientReferenceId, int amountTotal, Instant created) {
+        return completedEvent(sessionId, amountTotal, created)
                 .replace("\"payment_status\": \"paid\"",
                         "\"client_reference_id\": \"%s\",\n      \"payment_status\": \"paid\"".formatted(clientReferenceId));
     }
 
+    /**
+     * The ordinary case: Stripe charged exactly what the order says. Goal 8 compares the
+     * two, so a test that does not state the amount is not saying anything about it.
+     */
+    protected String paidEvent(String sessionId, Instant created) {
+        // Refuses rather than defaulting. Called before the order exists it would silently
+        // build an event charging zero, which goal 8 then rejects for reasons that look
+        // like a code bug and are not.
+        var total = orderRepo.findByStripeSessionId(sessionId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No order for " + sessionId + " yet. Use completedEvent with an explicit amount."))
+                .totalCents();
+        return completedEvent(sessionId, total, created);
+    }
+
     /** A checkout.session.completed event, shaped the way Stripe sends it. */
-    public static String completedEvent(String sessionId, Instant created) {
+    public static String completedEvent(String sessionId, int amountTotal, Instant created) {
         return """
                 {
                   "id": "evt_test_%s",
@@ -107,13 +127,13 @@ public abstract class IntegrationTest {
                     "object": {
                       "id": "%s",
                       "object": "checkout.session",
-                      "amount_total": 99,
+                      "amount_total": %d,
                       "currency": "usd",
                       "payment_status": "paid",
                       "status": "complete"
                     }
                   }
-                }""".formatted(sessionId, created.getEpochSecond(), sessionId);
+                }""".formatted(sessionId, created.getEpochSecond(), sessionId, amountTotal);
     }
 
     /** Stripe's signature scheme: t=<unix>,v1=<hmac sha256 of "t.payload">. */

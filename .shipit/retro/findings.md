@@ -32,11 +32,24 @@ promoted on the structural test instead of waiting for a count that will not arr
 
 - **Running `./verify` from whatever directory the last command left behind.** (3: 3 Sep
   2026) Exit 127 three times, because a `cd` into the test package persisted and `./verify`
-  lives at the root. Costs a round trip each time and produces a failure that looks like a
-  build break until you read the exit code. Clears the recurring bar at three.
+  lives at the root. Cleared the recurring bar at retro 2 and was not chosen, because the
+  cause is shell discipline rather than anything the skill text says. Still owed an edit if
+  it keeps happening.
+- **PRODUCT.md grows past the limit shipit-mvp sets, and nothing measures it.** (1: 3 Sep
+  2026, structural) 200 lines against a stated ~150, with 39 decision bullets making up
+  about half. shipit-mvp names this as "the only failure mode that actually kills this file"
+  and predicts it by feature eight. We are at feature six. Not chosen at retro 2 because
+  the edit would encode behaviour already happening: it gets raised unprompted every time.
+  Choose it if raising it ever stops working.
 
 ## Promoted
 
+- **Proofs nobody has seen fail.** (retro 2, 3 Sep 2026) Became "make each new proof fail
+  once before trusting it" in `shipit-feature` Step 3. Motivated by StartupTest passing while
+  proving the opposite of its name: SpringApplicationBuilder.properties() writes to the
+  lowest precedence tier, so a real secrets.properties outranked the blank keys and the app
+  booted fine. The secrets check written the same day was made to fail on purpose and was
+  sound. The difference between the two was whether anyone watched it go red.
 - **Proofs that arrange their own sequence.** (3 Sep 2026) Became the "the proof has to run
   the sequence reality produces" paragraph in `shipit-feature` Step 3. Motivated by the
   confirmation page NPE that shipped green because every test posted the webhook before

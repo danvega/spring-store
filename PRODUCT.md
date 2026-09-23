@@ -34,6 +34,17 @@ charged is the amount the store meant to charge.
    Done when: an event whose `amount_total` disagrees with the order total is refused
    rather than recorded.
 
+Beyond the MVP, both chosen on 3 September 2026 and neither started:
+
+9. **A null that could reach a screen is caught at build time, not by a buyer.**
+   Done when: the code carries JSpecify null markers, and assigning null to something
+   declared non-null fails the build rather than a page. This project has produced two
+   null bugs already, the confirmation page NullPointerException and the amount check
+   failing open on a null, so it has earned the annotations.
+10. **A transient Stripe failure retries instead of stranding a checkout.**
+   Done when: with Stripe failing twice and then succeeding, one checkout still produces
+   one order and one session. Today a blip leaves a pending order nobody can pay.
+
 ## Non-goals
 
 - **Real money** (not ever): test mode only. There is no business here and nothing to
@@ -149,6 +160,20 @@ charged is the amount the store meant to charge.
   Needs no new dependency, unlike Spring Session. Survives restarts, which an in-memory
   HTTP session does not, and it is inspectable in psql like every other fact this project
   cares about.
+- **An amount mismatch is refused with a 400 and the event is not claimed**: 400 rather
+  than 200 so the failure shows in Stripe's dashboard as well as the log, because a
+  mismatch is the one thing here that should be loud in two places. Not claimed because an
+  event the app could not act on keeps its retry, so a corrected redelivery still works.
+  The order stays unrecorded, which means the buyer sees goal 2's honest "Stripe has the
+  payment, the store does not" screen rather than a lie.
+- **Money is integer cents, not BigDecimal**: BigDecimal exists to stop people using
+  doubles, and integer cents does that too. Stripe's API is already in minor units, so
+  BigDecimal would mean converting at every boundary, which is where rounding bugs live.
+  Goal 8's check is exact integer equality, where BigDecimal would need `compareTo` rather
+  than `equals` because 3.96 and 3.960 differ by scale. Nothing here divides, so nothing
+  rounds. Revisit if tax, discounts or a second currency ever arrive, all of which are
+  non-goals today. Overflow is bounded: Stripe caps a line at 999,999, so the worst case
+  is about 594 million cents against int's 2.1 billion.
 - **No quantity cap**: a visitor can add as many of one sticker as they like. Capping
   would be arbitrary and it is not what protects the total, since goal 7 is about pricing
   server-side rather than limiting what the browser asks for. Stripe imposes its own limit
@@ -185,16 +210,17 @@ end-of-run batch.
 
 ## Current state
 
-**Works today:** goals 1 through 6. Stickers are added to a cart kept in the database and
-found by a cookie, quantities can be changed, and checking out turns the whole cart into
-one Stripe session and one order with lines. Landing back before the webhook shows a
+**Works today:** all eight goals, the MVP complete. Stickers go into a cart kept in the
+database and found by a cookie, and checking out turns the whole cart into one Stripe
+session and one order with lines. Every price is read from the sticker table, so a
+tampered request changes only quantities. Landing back before the webhook shows a
 confirming state that never claims the store has recorded anything. Forged, unsigned and
-tampered webhooks are rejected. A redelivered event is claimed once. A clone with no keys
-refuses to start. 46 tests behind `./verify`, all green.
+tampered webhooks are rejected, a redelivery is claimed once, and an event whose
+`amount_total` disagrees with the order total is refused rather than recorded. A clone
+with no keys refuses to start. 58 tests behind `./verify`, all green.
 **In progress:** nothing. Goal 1's browser round trip was proven against live Stripe
 test mode on 3 September 2026, evidence in `.shipit/verify/evidence/001-goal-1-live-stripe.md`.
 The measured gap between Stripe's event time and the app recording it was about 1 second.
-**Next:** goals 7 and 8, spec 007. Pricing is already server-side, so this is the proofs:
-a tampered quantity or price is ignored, and a webhook whose `amount_total` disagrees with
-the order total is refused rather than recorded. Stripe's limit of 999,999 per line needs
-a response better than a 500 and belongs there too.
+**Next:** the MVP is done. Goals 9 and 10 are chosen but not started: JSpecify null
+safety, and retries around the Stripe call. The one gap neither covers is reconciliation
+against Stripe, still recorded in `.shipit/open.md` as needing a scheduler.

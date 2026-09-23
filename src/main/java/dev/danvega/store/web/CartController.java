@@ -9,6 +9,7 @@ import dev.danvega.store.cart.CartService;
 import dev.danvega.store.catalog.Money;
 import dev.danvega.store.catalog.StickerRepository;
 import dev.danvega.store.checkout.CheckoutService;
+import dev.danvega.store.checkout.QuantityTooLargeException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -38,7 +39,10 @@ class CartController {
 
     @GetMapping("/cart")
     String cart(HttpServletRequest request, HttpServletResponse response, Model model) {
-        var cart = carts.forCookie(cookie.resolveOrIssue(request, response));
+        return renderCart(carts.forCookie(cookie.resolveOrIssue(request, response)), model, null);
+    }
+
+    private String renderCart(Cart cart, Model model, String error) {
         if (cart.isEmpty()) {
             return "cart-empty";
         }
@@ -47,6 +51,7 @@ class CartController {
         model.addAttribute("totalDisplay", Money.display(
                 lines.stream().mapToInt(LineView::lineTotalCents).sum()));
         model.addAttribute("itemCount", cart.itemCount());
+        model.addAttribute("error", error);
         return "cart";
     }
 
@@ -72,12 +77,19 @@ class CartController {
     }
 
     @PostMapping("/cart/checkout")
-    String checkout(HttpServletRequest request, HttpServletResponse response) {
+    String checkout(HttpServletRequest request, HttpServletResponse response, Model model) {
         var cart = carts.forCookie(cookie.resolveOrIssue(request, response));
         if (cart.isEmpty()) {
             return "redirect:/cart";
         }
-        return "redirect:" + checkout.start(cart);
+        try {
+            return "redirect:" + checkout.start(cart);
+        }
+        catch (QuantityTooLargeException e) {
+            // Their cart is fine and their fault is nothing. Show it back with the reason
+            // rather than a 500 from Stripe's API.
+            return renderCart(cart, model, e.getMessage());
+        }
     }
 
     private List<LineView> view(Cart cart) {

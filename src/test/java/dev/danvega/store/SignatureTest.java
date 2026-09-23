@@ -32,7 +32,7 @@ class SignatureTest extends IntegrationTest {
     @Test
     void a_wrong_signature_is_rejected_and_records_nothing() {
         var sessionId = buy("ship-it");
-        var payload = completedEvent(sessionId, Instant.now());
+        var payload = paidEvent(sessionId, Instant.now());
 
         client.post().uri("/stripe/webhook")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -48,7 +48,7 @@ class SignatureTest extends IntegrationTest {
     @Test
     void a_missing_signature_header_is_rejected() {
         var sessionId = buy("autowired");
-        var payload = completedEvent(sessionId, Instant.now());
+        var payload = paidEvent(sessionId, Instant.now());
 
         client.post().uri("/stripe/webhook")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -63,7 +63,7 @@ class SignatureTest extends IntegrationTest {
     void a_payload_tampered_with_after_signing_is_rejected() {
         var sessionId = buy("ship-it");
         var at = Instant.now();
-        var original = completedEvent(sessionId, at);
+        var original = paidEvent(sessionId, at);
         var signature = stripeSignature(original, at);
 
         // Same signature, body edited to change the amount.

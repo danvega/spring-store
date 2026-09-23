@@ -57,6 +57,9 @@ public class CheckoutService {
                     .orElseThrow(() -> new CheckoutFailedException(
                             "Cart holds sticker " + line.stickerId() + " which no longer exists",
                             new IllegalStateException()));
+            if (line.quantity() > QuantityTooLargeException.STRIPE_MAX_QUANTITY) {
+                throw new QuantityTooLargeException(sticker.name(), line.quantity());
+            }
             orderLines.add(new OrderLine(sticker.id(), line.quantity(), sticker.priceCents()));
             stripeLines.add(new StripeGateway.Line(sticker.name(), sticker.priceCents(), line.quantity()));
         }

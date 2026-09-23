@@ -29,7 +29,7 @@ class WebhookTest extends IntegrationTest {
         assertThat(orders.findByStripeSessionId(sessionId).orElseThrow().isRecorded()).isFalse();
 
         var paidAt = Instant.now();
-        var payload = completedEvent(sessionId, paidAt);
+        var payload = paidEvent(sessionId, paidAt);
 
         client.post().uri("/stripe/webhook")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -48,7 +48,8 @@ class WebhookTest extends IntegrationTest {
     @Test
     void an_event_for_an_unknown_session_is_acknowledged_not_recorded() {
         var now = Instant.now();
-        var payload = completedEvent("cs_test_never_created_here", now);
+        // No order exists, so the amount is never compared. Any value will do.
+        var payload = completedEvent("cs_test_never_created_here", 99, now);
 
         client.post().uri("/stripe/webhook")
                 .contentType(MediaType.APPLICATION_JSON)

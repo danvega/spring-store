@@ -4,12 +4,16 @@ import java.time.Instant;
 
 import dev.danvega.store.cart.CartService;
 import dev.danvega.store.order.PurchaseOrderRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Turns a verified Stripe event into the app's own record that the order is paid. */
 @Service
 public class OrderRecorder {
+
+    private static final Logger log = LoggerFactory.getLogger(OrderRecorder.class);
 
     private final PurchaseOrderRepository orders;
     private final StripeEventRepository events;
@@ -33,7 +37,7 @@ public class OrderRecorder {
      */
     @Transactional
     public RecordOutcome record(String stripeEventId, String type, String stripeSessionId,
-            String clientReferenceId, Instant paidAtStripe) {
+            String clientReferenceId, Long amountTotal, Instant paidAtStripe) {
         if (events.existsByStripeEventId(stripeEventId)) {
             return new RecordOutcome.AlreadySeen(stripeEventId);
         }
@@ -50,6 +54,21 @@ public class OrderRecorder {
             // payment. A payment the app does not know about is the exact failure this
             // project exists to catch, so the door stays open.
             return new RecordOutcome.NoMatchingOrder(stripeSessionId);
+        }
+
+        // Goal 8. What Stripe says it charged and what the store computed are two
+        // independent facts, exactly like the two timestamps on an order. Recording a
+        // payment without comparing them means trusting a number nobody checked.
+        // A missing amount is refused too. This check exists to avoid trusting a number
+        // nobody verified, so failing to read the number is not a reason to pass. The
+        // deserializeUnsafe fallback in the controller can leave fields unmapped when
+        // Stripe's API version and the SDK's disagree, and that is exactly when this
+        // would otherwise fail open.
+        if (amountTotal == null || amountTotal != order.totalCents()) {
+            log.error("Refusing event {}: order {} totals {} cents but Stripe reported {}",
+                    stripeEventId, order.reference(), order.totalCents(), amountTotal);
+            return new RecordOutcome.AmountMismatch(order.reference(), order.totalCents(),
+                    amountTotal == null ? -1 : amountTotal);
         }
 
         events.save(StripeEvent.received(stripeEventId, type));

@@ -53,7 +53,8 @@ class ReplayTest extends IntegrationTest {
     void a_redelivered_event_is_not_processed_twice() {
         var sessionId = buy("stack-overflow-driven");
         var eventId = "evt_test_" + sessionId;
-        var payload = completedEvent(sessionId, Instant.now());
+        // Explicit, because the order does not exist yet and will be created at 99.
+        var payload = completedEvent(sessionId, 99, Instant.now());
 
         deliver(payload);
         var afterFirst = orders.findByStripeSessionId(sessionId).orElseThrow();
@@ -77,8 +78,8 @@ class ReplayTest extends IntegrationTest {
         var first = buy("ship-it");
         var second = buy("spring-boot-leaf");
 
-        deliver(completedEvent(first, Instant.now()));
-        deliver(completedEvent(second, Instant.now()));
+        deliver(paidEvent(first, Instant.now()));
+        deliver(paidEvent(second, Instant.now()));
 
         assertThat(orders.findByStripeSessionId(first).orElseThrow().isRecorded()).isTrue();
         assertThat(orders.findByStripeSessionId(second).orElseThrow().isRecorded()).isTrue();
@@ -92,7 +93,8 @@ class ReplayTest extends IntegrationTest {
         // insert failed after Stripe already had a payable session.
         var sessionId = "cs_test_orphaned_session";
         var eventId = "evt_test_" + sessionId;
-        var payload = completedEvent(sessionId, Instant.now());
+        // Explicit, because the order does not exist yet and will be created at 99.
+        var payload = completedEvent(sessionId, 99, Instant.now());
 
         deliver(payload);
         assertThat(events.countByStripeEventId(eventId))
@@ -113,7 +115,8 @@ class ReplayTest extends IntegrationTest {
     void a_rejected_event_is_not_claimed_so_stripe_can_retry_it() {
         var sessionId = buy("it-works-on-my-machine");
         var eventId = "evt_test_" + sessionId;
-        var payload = completedEvent(sessionId, Instant.now());
+        // Explicit, because the order does not exist yet and will be created at 99.
+        var payload = completedEvent(sessionId, 99, Instant.now());
 
         client.post().uri("/stripe/webhook")
                 .contentType(MediaType.APPLICATION_JSON)

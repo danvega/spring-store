@@ -60,7 +60,7 @@ class RecoveryTest extends IntegrationTest {
         assertThat(order.stripeSessionId()).isNull();
 
         var sessionId = "cs_test_recovered_0001";
-        deliver(completedEvent(sessionId, reference, Instant.now()));
+        deliver(completedEvent(sessionId, reference, 99, Instant.now()));
 
         var recorded = orders.findByReference(reference).orElseThrow();
         assertThat(recorded.isRecorded()).as("matched on client_reference_id").isTrue();
@@ -73,7 +73,7 @@ class RecoveryTest extends IntegrationTest {
         orderWithNoSession(reference);
 
         var sessionId = "cs_test_recovered_0002";
-        deliver(completedEvent(sessionId, reference, Instant.now()));
+        deliver(completedEvent(sessionId, reference, 99, Instant.now()));
 
         assertThat(orders.findByStripeSessionId(sessionId))
                 .as("findable the direct way afterwards")
@@ -86,7 +86,7 @@ class RecoveryTest extends IntegrationTest {
         orderWithNoSession(reference);
 
         var sessionId = "cs_test_recovered_0003";
-        var payload = completedEvent(sessionId, reference, Instant.now());
+        var payload = completedEvent(sessionId, reference, 99, Instant.now());
 
         deliver(payload);
         var afterFirst = orders.findByReference(reference).orElseThrow();

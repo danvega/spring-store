@@ -28,7 +28,7 @@ class ConfirmationTest extends IntegrationTest {
         var sessionId = buy("spring-boot-leaf");
 
         var paidAt = Instant.now();
-        var payload = completedEvent(sessionId, paidAt);
+        var payload = paidEvent(sessionId, paidAt);
         client.post().uri("/stripe/webhook")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Stripe-Signature", stripeSignature(payload, paidAt))

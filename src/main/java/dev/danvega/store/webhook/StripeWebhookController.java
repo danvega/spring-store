@@ -60,7 +60,7 @@ class StripeWebhookController {
 
         var sessionId = session.get().getId();
         var outcome = recorder.record(event.getId(), event.getType(), sessionId,
-                session.get().getClientReferenceId(), paidAt(event));
+                session.get().getClientReferenceId(), session.get().getAmountTotal(), paidAt(event));
 
         return switch (outcome) {
             case RecordOutcome.Recorded(var order) -> ResponseEntity.ok("recorded " + order.reference());
@@ -70,6 +70,12 @@ class StripeWebhookController {
                 log.info("Event {} was already handled, ignoring the redelivery", eventId);
                 yield ResponseEntity.ok("already handled " + eventId);
             }
+            case RecordOutcome.AmountMismatch(var reference, var expected, var charged) ->
+                // 400 rather than 200 so the failure shows in Stripe's dashboard too. A
+                // mismatch is the one thing here that should be loud in both places.
+                ResponseEntity.badRequest()
+                        .body("amount mismatch on " + reference + ": expected " + expected
+                                + " cents, Stripe charged " + charged);
             case RecordOutcome.NoMatchingOrder(var missing) -> {
                 // Stripe knows about a session this app never created. Acknowledge it so
                 // Stripe stops retrying, but say so in the log.

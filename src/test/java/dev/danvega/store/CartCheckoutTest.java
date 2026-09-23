@@ -95,7 +95,7 @@ class CartCheckoutTest extends IntegrationTest {
                 .isFalse();
 
         var at = Instant.now();
-        var payload = completedEvent(sessionId, at);
+        var payload = paidEvent(sessionId, at);
         client.post().uri("/stripe/webhook")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Stripe-Signature", stripeSignature(payload, at))
@@ -117,7 +117,7 @@ class CartCheckoutTest extends IntegrationTest {
         addToCart("ship-it");
 
         var at = Instant.now();
-        var payload = completedEvent(sessionId, at);
+        var payload = paidEvent(sessionId, at);
         client.post().uri("/stripe/webhook")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Stripe-Signature", stripeSignature(payload, at))
@@ -158,7 +158,7 @@ class CartCheckoutTest extends IntegrationTest {
         var sessionId = aCartOfThree();
 
         var at = Instant.now();
-        var payload = completedEvent(sessionId, at);
+        var payload = paidEvent(sessionId, at);
         client.post().uri("/stripe/webhook")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Stripe-Signature", stripeSignature(payload, at))
