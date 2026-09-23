@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The one entry point. Every acceptance criterion in .ship/specs/ names a target here.
+# The one entry point. Every acceptance criterion in .shipit/specs/ names a target here.
 set -euo pipefail
 cd "$(dirname "$0")"
 

@@ -2,7 +2,7 @@
 
 Done in static HTML rather than handed to a design tool. The visual direction is locked
 and recorded, so the aesthetic question is closed. What is open is arrangement, and
-`ship-prototype` says plain HTML is the right answer when the question is density and
+`shipit-prototype` says plain HTML is the right answer when the question is density and
 interaction rather than aesthetics.
 
 A cart is also a solved layout. This round exists to settle product questions, not to

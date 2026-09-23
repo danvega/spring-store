@@ -1,6 +1,6 @@
 # Open
 
-What is owed, carried out of `ship-feature` review batches. A state, not a log: items are
+What is owed, carried out of `shipit-feature` review batches. A state, not a log: items are
 deleted when they are addressed, not marked done.
 
 Read this alongside PRODUCT.md's `Next:` line at the start of a session.

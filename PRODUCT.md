@@ -192,7 +192,7 @@ confirming state that never claims the store has recorded anything. Forged, unsi
 tampered webhooks are rejected. A redelivered event is claimed once. A clone with no keys
 refuses to start. 46 tests behind `./verify`, all green.
 **In progress:** nothing. Goal 1's browser round trip was proven against live Stripe
-test mode on 3 September 2026, evidence in `.ship/verify/evidence/001-goal-1-live-stripe.md`.
+test mode on 3 September 2026, evidence in `.shipit/verify/evidence/001-goal-1-live-stripe.md`.
 The measured gap between Stripe's event time and the app recording it was about 1 second.
 **Next:** goals 7 and 8, spec 007. Pricing is already server-side, so this is the proofs:
 a tampered quantity or price is ignored, and a webhook whose `amount_total` disagrees with
